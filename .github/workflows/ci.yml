@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MAVEN_ARGS: --batch-mode --no-transfer-progress
+
+jobs:
+  build:
+    name: build (Java ${{ matrix.java }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # the minimum supported version and the latest LTS version
+        java: ['17', '25']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # AsciidoctorJ 4 and typst-pdf are not published yet: build them from source.
+      # DEPENDENCIES_TOKEN: a token that can read these repositories (they are private).
+      - name: Checkout AsciidoctorJ
+        uses: actions/checkout@v7
+        with:
+          repository: yuzutech/asciidoctorj
+          path: deps/asciidoctorj
+          token: ${{ secrets.DEPENDENCIES_TOKEN }}
+      - name: Checkout typst-pdf-wasm
+        uses: actions/checkout@v7
+        with:
+          repository: ggrossetie/typst-pdf-wasm
+          path: deps/typst-pdf-wasm
+          token: ${{ secrets.DEPENDENCIES_TOKEN }}
+      - name: Get the revision of typst-pdf-wasm
+        id: typst
+        run: echo "sha=$(git -C deps/typst-pdf-wasm rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+
+      # Building the Wasm module compiles Typst: reuse it while typst-pdf-wasm doesn't change.
+      - name: Cache the Wasm module
+        id: wasm-cache
+        uses: actions/cache@v4
+        with:
+          path: deps/typst-pdf-wasm/dist/typst-pdf.wasm
+          key: typst-pdf-wasm-${{ steps.typst.outputs.sha }}
+      - name: Set up Rust
+        if: steps.wasm-cache.outputs.cache-hit != 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Cache the Rust build
+        if: steps.wasm-cache.outputs.cache-hit != 'true'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: deps/typst-pdf-wasm
+      - name: Build the Wasm module
+        if: steps.wasm-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes binaryen
+          deps/typst-pdf-wasm/scripts/build-wasm.sh
+
+      - name: Install AsciidoctorJ
+        run: mvn install -DskipTests -Dmaven.javadoc.skip=true
+        working-directory: deps/asciidoctorj
+      - name: Install typst-pdf
+        run: mvn install -DskipTests -DskipWasmBuild=true
+        working-directory: deps/typst-pdf-wasm/java
+
+      - name: Build and test
+        run: mvn verify
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-java-${{ matrix.java }}
+          path: target/surefire-reports/
