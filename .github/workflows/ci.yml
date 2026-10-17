@@ -53,7 +53,7 @@ jobs:
       # Building the Wasm module compiles Typst: reuse it while typst-pdf-wasm doesn't change.
       - name: Cache the Wasm module
         id: wasm-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: deps/typst-pdf-wasm/dist/typst-pdf.wasm
           key: typst-pdf-wasm-${{ steps.typst.outputs.sha }}
