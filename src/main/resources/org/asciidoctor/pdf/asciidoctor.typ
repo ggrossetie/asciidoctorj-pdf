@@ -174,10 +174,14 @@
 )
 
 /// An abstract ([abstract]).
-#let abstract(title: none, body) = block(inset: (x: 2em), {
-  if title != none { align(center, block-title(title)) }
-  text(style: "italic", body)
-})
+#let abstract(title: none, body) = block(
+  width: 100%, above: 2.5em, below: 2.5em, inset: (x: 2em, y: 1.2em), stroke: (y: 0.5pt + colors.border),
+  {
+    if title != none { align(center, block-title(title)) }
+    // NOTE upright, so that the monospaced text doesn't clash with the text
+    text(size: 1.05em, fill: colors.heading, body)
+  },
+)
 
 /// A thematic break (''').
 #let thematic-break() = align(center, line(length: 50%, stroke: 0.5pt + colors.border))
