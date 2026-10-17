@@ -18,16 +18,21 @@
   caution: rgb("#bf3400"),
 )
 
+/// The default fonts (embedded in Typst). A template changes them with the fonts argument of asciidoctor.
 #let fonts = (
   body: ("Libertinus Serif",),
   heading: ("Libertinus Serif",),
   mono: ("DejaVu Sans Mono",),
 )
 
+/// The fonts of the document: the default fonts, overridden by the fonts argument of asciidoctor.
+#let document-fonts = state("asciidoctor-fonts", fonts)
+#let default-fonts = fonts
+
 // Inline elements
 
 /// Monospaced text (`text`).
-#let mono(body) = text(font: fonts.mono, size: 0.88em, body)
+#let mono(body) = context text(font: document-fonts.get().mono, size: 0.88em, body)
 
 /// A phrase with roles ([.role]#text#).
 #let phrase(roles, body) = {
@@ -59,7 +64,8 @@
 /// A callout number in a verbatim block or in a callout list.
 #let callout(number) = box(
   baseline: 15%, circle(radius: 0.55em, fill: colors.text, inset: 0pt,
-    align(center + horizon, text(fill: white, size: 0.75em, weight: "bold", font: fonts.mono, str(number)))),
+    align(center + horizon, context text(fill: white, size: 0.75em, weight: "bold",
+      font: document-fonts.get().mono, str(number)))),
 )
 
 /// An icon (icon:name[]). There is no icon font: the name is displayed.
@@ -233,6 +239,8 @@
 
 /// The document: sets up the page and the styles, then displays the title, the table of contents and the body.
 ///
+/// - fonts: the fonts that replace the default ones, e.g. (body: "Noto Serif", heading: "Noto Sans"); the fonts must
+///   be embedded in Typst, in the template directory or in pdf-fontsdir.
 /// - attributes: the document attributes (a dictionary of strings), for instance to read custom attributes.
 #let asciidoctor(
   title: none,
@@ -243,9 +251,12 @@
   doctype: "article",
   lang: "en",
   toc: none,
+  fonts: (:),
   attributes: (:),
   body,
 ) = {
+  let fonts = default-fonts + fonts
+  document-fonts.update(fonts)
   set document(
     title: title,
     author: authors.map(author => author.name),

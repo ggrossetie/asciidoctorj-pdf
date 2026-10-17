@@ -302,13 +302,42 @@ A template only redefines what it needs; it can reuse the base template by impor
 A template can also replace `asciidoctor` entirely, like the invoice template of typst-pdf-wasm.
 It must accept the named arguments above (or `..args`) and the body.
 
+=== Fonts
+
+Typst embeds Libertinus Serif, New Computer Modern and DejaVu Sans Mono.
+To use another font, make its files (TTF, OTF, TTC) available to Typst, then select it by its family name:
+
+. Put the font files in the template directory (or one of its subdirectories): they are loaded with the template.
+  Or put them in a directory given with the `pdf-fontsdir` attribute.
+. Pass the fonts to the `asciidoctor` function of the base template:
++
+.theme/theme.typ
+[source,typst]
+----
+#import "/asciidoctor.typ" as base: *
+
+#let asciidoctor = base.asciidoctor.with(fonts: (body: "Rounded Mplus 1c", heading: "Rounded Mplus 1c"))
+----
+
+A template that replaces `asciidoctor` entirely sets the font itself, with `set text(font: "Rounded Mplus 1c")`.
+A `set text` rule *around* `base.asciidoctor` has no effect: the base template sets the font inside, and the innermost rule wins.
+
+The family name is the one stored in the font file, which can differ from the name of the font on its website: M PLUS Rounded 1c, from Google Fonts, is named `Rounded Mplus 1c`.
+`fc-query -f '%{family}\n' font.ttf` prints it.
+With a wrong name, Typst warns about an unknown font family (`typst: warning: unknown font family`) and falls back to the default font.
+
+The font files are TrueType (`.ttf`), OpenType (`.otf`) or collections (`.ttc`, `.otc`), one file per style (Regular, Bold, Italic…): Typst picks the file that matches the weight and the style of the text, and doesn't synthesize the missing styles (without an italic file, the italic text is upright).
+Commit the font files with the template (check that the font license allows it, like the SIL Open Font License) so that everyone gets the same PDF.
+
+The custom template example uses M PLUS Rounded 1c this way: see link:example/custom-template/theme/fonts[example/custom-template/theme/fonts].
+
 === Functions of the base template
 
 [cols="2,3"]
 |===
 |Function |Used for
 
-|`asciidoctor(title:, subtitle:, show-title:, authors:, revision:, doctype:, lang:, toc:, attributes:, body)` |The document: page, text and element styles, title, table of contents
+|`asciidoctor(title:, subtitle:, show-title:, authors:, revision:, doctype:, lang:, toc:, fonts:, attributes:, body)` |The document: page, text and element styles, title, table of contents. `fonts` replaces some of the default fonts (`body`, `heading`, `mono`).
 |`title-page(title:, subtitle:, authors:, revision:, doctype:)` |The title page (book) or the title (article)
 |`toc-block(title:, levels:)` |The table of contents
 |`part(title)` |A part of a book (level 0 section)
@@ -337,7 +366,7 @@ It must accept the named arguments above (or `..args`) and the body.
 |`stem(notation, source, block:)` |STEM block or inline macro
 |===
 
-The base template also defines the dictionaries `colors` and `fonts`.
+The base template also defines the dictionaries `colors` and `fonts` (the default fonts).
 
 NOTE: The functions of the base template call each other through the base module: redefining `block-title` in a template changes the titles written by the converter, not the ones written by the base `example` function.
 
