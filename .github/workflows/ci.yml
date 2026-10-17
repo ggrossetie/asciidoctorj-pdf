@@ -29,19 +29,17 @@ jobs:
       - uses: actions/checkout@v7
 
       # AsciidoctorJ 4 and typst-pdf are not published yet: build them from source.
-      # DEPENDENCIES_TOKEN: a token that can read these repositories (they are private).
       - name: Checkout AsciidoctorJ
         uses: actions/checkout@v7
         with:
-          repository: yuzutech/asciidoctorj
+          repository: ggrossetie/asciidoctorj
+          ref: asciidoctorj-4
           path: deps/asciidoctorj
-          token: ${{ secrets.DEPENDENCIES_TOKEN }}
       - name: Checkout typst-pdf-wasm
         uses: actions/checkout@v7
         with:
           repository: ggrossetie/typst-pdf-wasm
           path: deps/typst-pdf-wasm
-          token: ${{ secrets.DEPENDENCIES_TOKEN }}
       - name: Get the revision of typst-pdf-wasm
         id: typst
         run: echo "sha=$(git -C deps/typst-pdf-wasm rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -77,7 +75,7 @@ jobs:
           deps/typst-pdf-wasm/scripts/build-wasm.sh
 
       - name: Install AsciidoctorJ
-        run: mvn install -DskipTests -Dmaven.javadoc.skip=true
+        run: ./gradlew --no-daemon :asciidoctorj-api:publishToMavenLocal :asciidoctorj-core:publishToMavenLocal
         working-directory: deps/asciidoctorj
       - name: Install typst-pdf
         run: mvn install -DskipTests -DskipWasmBuild=true
