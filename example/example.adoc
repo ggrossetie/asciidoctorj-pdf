@@ -1,0 +1,197 @@
+= AsciidoctorJ PDF: A Showcase
+Guillaume Grossetie <ggrossetie@yuzutech.fr>
+v0.1, 2026-10-17: Rendered with the default template
+:doctype: article
+:toc:
+:toclevels: 2
+:sectnums:
+:imagesdir: images
+:experimental:
+:source-language: java
+
+[abstract]
+This document shows how the AsciiDoc elements look with the default template of AsciidoctorJ PDF.
+It was converted with `asciidoctorj -b pdf -a reproducible example.adoc`: AsciidoctorJ produced Typst, and Typst, running on the JVM as WebAssembly, produced this PDF.
+
+== Text
+
+A paragraph can contain *strong*, _emphasized_, `monospaced`, ^superscript^ and ~subscript~ text, #highlighted# text, and text with a role such as [.red]#red#, [.underline]#underlined# or [.line-through]#struck through#.
+The typographic replacements apply: "`double quotes`", '`single quotes`', an em dash -- like this, an ellipsis... and (C), (TM), ->.
+
+The characters that have a meaning in Typst are escaped: 2 * 3 = 6, $9.99, #hashtag, @mention, <tag>, [brackets], snake_case, ~/path and // not a comment.
+
+Links can be external, like https://asciidoctor.org[Asciidoctor] or https://typst.app, internal, like <<lists>> or <<code,the section about code>>, or point to an inline anchor: <<anchor>>.
+Footnotes are placed at the bottom of the page.footnote:[Typst lays out the footnotes.]
+
+Use kbd:[Ctrl+Shift+P] to open the palette, click btn:[OK], or select menu:File[Export,PDF].
+
+Line breaks are preserved +
+when a line ends with a plus.
+
+== Admonitions
+
+NOTE: A note gives additional information.
+
+TIP: A tip suggests a better way.
+
+IMPORTANT: Something important to remember.
+
+WARNING: A warning about a possible problem.
+
+[CAUTION]
+.Admonition with a title
+====
+An admonition block can have a title and contain several blocks.
+
+* Including lists.
+====
+
+== Blocks
+
+.An example block
+====
+An example block encloses an example, with a numbered caption.
+====
+
+.A sidebar
+****
+A sidebar contains content that complements the main text.
+****
+
+[quote, Edsger W. Dijkstra, The Humble Programmer]
+____
+Simplicity is prerequisite for reliability.
+____
+
+[verse, William Blake, Auguries of Innocence]
+____
+To see a World in a Grain of Sand
+And a Heaven in a Wild Flower
+____
+
+[[code]]
+== Code
+
+.Source code with callouts
+[source,java]
+----
+public class Greeter {
+
+    private final String name; // <1>
+
+    public String greet() {
+        return "Hello, " + name + "!"; // <2>
+    }
+}
+----
+<1> The name is immutable.
+<2> Typst highlights the syntax.
+
+[source,json]
+----
+{ "backend": "pdf", "template": "theme/theme.typ", "reproducible": true }
+----
+
+....
+A literal block keeps
+    the spaces and line breaks.
+....
+
+[[lists]]
+== Lists
+
+* Unordered lists
+** can be nested
+*** on several levels
+* and contain blocks:
++
+[source,sh]
+----
+mvn verify
+----
+
+. Ordered lists
+. are numbered
+.. with nested levels
+.. in another style
+
+[lowerroman,start=4]
+. Lists can start at any number
+. and use another numbering style
+
+* [x] A checklist
+* [x] with checked items
+* [ ] and unchecked items
+
+Typst:: A markup-based typesetting system.
+Chicory:: A WebAssembly runtime for the JVM.
+AsciidoctorJ:: Asciidoctor for the JVM, now in pure Java.
+
+[horizontal]
+Horizontal:: A description list
+Lists:: on two columns
+
+[qanda]
+Does it need Ruby?:: No, everything runs on the JVM.
+Does it need a native library?:: No, Typst runs as JVM bytecode.
+
+== Tables
+
+.Supported formats
+[cols="2,1,^1,3",options="header,footer"]
+|===
+|Format |Extension |Supported |Notes
+
+|Scalable Vector Graphics |`.svg` |✔ |Rendered as vectors
+|Portable Network Graphics |`.png` |✔ |
+|JPEG |`.jpg` |✔ |
+|PDF |`.pdf` |✔ |Embedded as vectors
+|Remote image |URL |✘ |Not yet
+
+3+|Formats |5
+|===
+
+[cols="1,1",frame=topbot,grid=rows,stripes=even]
+|===
+|A table |with stripes
+|and only |horizontal lines
+|in the |frame
+|===
+
+[cols="1a,1"]
+|===
+|An AsciiDoc cell can contain:
+
+* lists,
+* and other blocks.
+|A plain cell.
+2+|A cell spanning two columns.
+|===
+
+== Images
+
+.The conversion pipeline
+image::diagram.svg[Pipeline,pdfwidth=90%,align=center]
+
+An inline image image:logo.svg[Logo,height=14] sits on the text line.
+
+[[anchor]]This paragraph has an anchor, the target of a link in the first section.
+
+== Raw Typst
+
+A passthrough block contains Typst code, for what AsciiDoc can't express:
+
+++++
+#align(center, grid(
+  columns: 3, gutter: 8pt,
+  ..range(1, 7).map(n => rect(width: 40pt, height: 24pt, radius: 3pt,
+    fill: color.mix((rgb("#2156a5"), n * 15%), (white, 100% - n * 15%)),
+    align(center + horizon, text(fill: white, weight: "bold", str(n)))))
+))
+++++
+
+[appendix]
+== The default template
+
+The default rendering is defined by `asciidoctor.typ`.
+A template given with the `pdf-template` attribute can redefine any of its functions, or style the native Typst elements with show rules.

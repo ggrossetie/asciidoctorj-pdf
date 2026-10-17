@@ -13,6 +13,7 @@ AsciidoctorJ PDF converts AsciiDoc to PDF on the JVM, without Ruby and without a
 The AsciiDoc document is converted to https://typst.app[Typst] by a converter for AsciidoctorJ 4 (the pure Java implementation of Asciidoctor), then compiled to PDF by Typst itself, compiled to WebAssembly and translated to JVM bytecode by https://chicory.dev[Chicory].
 
 The look of the PDF is defined by a Typst template given as a parameter.
+See link:example/example.pdf[example/example.pdf], converted from link:example/example.adoc[example/example.adoc] with the default template.
 
 IMPORTANT: This project is experimental.
 
