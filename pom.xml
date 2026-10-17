@@ -78,4 +78,36 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- mvn -Pexamples package: converts the example documents to PDF -->
+    <profile>
+      <id>examples</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.6.4</version>
+            <executions>
+              <execution>
+                <id>generate-examples</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>java</goal>
+                </goals>
+                <configuration>
+                  <mainClass>org.asciidoctor.pdf.examples.GenerateExamples</mainClass>
+                  <classpathScope>test</classpathScope>
+                  <arguments>
+                    <argument>${project.basedir}/example</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
