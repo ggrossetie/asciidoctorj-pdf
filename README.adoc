@@ -1,0 +1,351 @@
+= AsciidoctorJ PDF
+:toc: macro
+:toclevels: 2
+:source-language: java
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:warning-caption: :warning:
+endif::[]
+
+AsciidoctorJ PDF converts AsciiDoc to PDF on the JVM, without Ruby and without any native library.
+The AsciiDoc document is converted to https://typst.app[Typst] by a converter for AsciidoctorJ 4 (the pure Java implementation of Asciidoctor), then compiled to PDF by Typst itself, compiled to WebAssembly and translated to JVM bytecode by https://chicory.dev[Chicory].
+
+The look of the PDF is defined by a Typst template given as a parameter.
+
+IMPORTANT: This project is experimental.
+
+toc::[]
+
+== Technical choices
+
+=== Pipeline
+
+....
+                  AsciidoctorJ 4 (pure Java)                         typst-pdf (Typst → Wasm → JVM bytecode)
+document.adoc ──► parser ──► AST ──► TypstTranslator ──► main.typ ──► Typst compiler ──► document.pdf
+                                                            ▲
+                         asciidoctor.typ (base template) ───┤
+                         your template (pdf-template) ──────┤
+                         images, fonts ─────────────────────┘
+....
+
+The converter is a regular AsciidoctorJ converter: it receives the nodes of the document, produces Typst source for each of them, and the `pdf` backend compiles the result in memory.
+The same translation is available as the `typst` backend, which writes the Typst source instead of the PDF (useful to debug a document or to develop a template).
+
+=== Why Typst
+
+* Typst is a complete typesetting system (line breaking, hyphenation, page layout, footnotes, outlines, tables, figures, syntax highlighting, PDF bookmarks and links), so the converter doesn't have to implement a layout engine like Asciidoctor PDF does with Prawn.
+* Typst has a real language for templates: functions, show rules and set rules.
+  A template is a Typst file rather than a YAML theme, so it can change any aspect of the rendering.
+* Typst compiles fast and incrementally.
+
+=== Why WebAssembly and Chicory
+
+Typst is written in Rust.
+The https://github.com/ggrossetie/typst-pdf-wasm[typst-pdf-wasm] module compiles a minimal Typst (no package downloads, no SVG/PNG/HTML export) to WebAssembly, and Chicory translates the WebAssembly module to JVM bytecode *at build time*:
+
+* no native library (works on any OS and architecture where a JVM runs),
+* no WebAssembly interpreter at runtime (the code is JIT-compiled like any Java code),
+* compatible with GraalVM native-image.
+
+The first compilation takes about 2.5 seconds (class loading and JIT warmup), the next ones about 150 ms for a 3-page document.
+The Typst compiler is costly to create and keeps an incremental cache, so a single instance is shared by all the conversions of the JVM (it compiles one document at a time).
+
+=== Native Typst elements, overridable functions
+
+The generated Typst uses the native Typst element when there is one, so that a template can style it with a show rule (for instance, `show heading.where(level: 1): set text(fill: blue)`):
+
+[cols="1,2"]
+|===
+|AsciiDoc |Typst
+
+|Section |`heading` (with the section number computed by Asciidoctor, and a label for the ID)
+|Unordered list |`list`
+|Ordered list |`enum` (`numbering` from the list style, `start`, `reversed`)
+|Description list |`terms`
+|Table |`table` (columns, alignments, spans, `table.header`, `table.footer`) in a `table-block`
+|Listing, source, literal |`raw` (Typst highlights the source code)
+|Quote |`quote`
+|Footnote |`footnote` (with labels for the footnote references)
+|Link |`link`
+|Cross reference |`link` to a `label` (the ID of the target)
+|Strong, emphasis, superscript, subscript, mark |`strong`, `emph`, `super`, `sub`, `highlight`
+|Hard line break, page break |`linebreak`, `pagebreak`
+|===
+
+The other AsciiDoc elements have no Typst equivalent: they are calls to functions of the base template (`admonition`, `sidebar`, `example`, `image-block`, `mono`, `kbd`…), that a template can redefine.
+See <<templates>>.
+
+=== Escaping the text
+
+The converter doesn't see the plain text of a paragraph: Asciidoctor applies the substitutions and splices the output of the inline nodes (strong, link…) into the text.
+The text must be escaped for Typst (`*`, `_`, `#`, `$`, `@`, `<`…), but not the Typst code of the inline nodes.
+
+So the converter replaces the Typst code of an inline node with an opaque token (an index between two Unicode noncharacters, `U+FDD0` and `U+FDD1`).
+When the whole inline content of a block is known (paragraph, title, list item, table cell…), the text is escaped, the HTML entities produced by the substitutions are decoded, and the tokens are replaced with the code.
+The token contains no AsciiDoc markup character, so the substitutions that run after an inline node is converted can't match the generated code (the mark substitution, `+#text#+`, would match the `#` of a Typst function call).
+
+=== The Typst project in memory
+
+The `pdf` backend builds a virtual Typst project:
+
+[cols="1,3"]
+|===
+|Path |Content
+
+|`/main.typ` |The converted document
+|`/asciidoctor.typ` |The base template
+|`/template/` |The directory of the template (`pdf-template`), up to 4 levels deep: `.typ`, images, data files (JSON, YAML, CSV…). The fonts of this directory are loaded too.
+|`/assets/` |The images of the document (resolved with `imagesdir`, relative to the document directory) and the `data:` URIs
+|===
+
+Typst's default fonts (Libertinus Serif, New Computer Modern, DejaVu Sans Mono) are embedded in the module.
+
+== Requirements
+
+* Java 17 or newer.
+* AsciidoctorJ 4.0.0-SNAPSHOT and typst-pdf 0.1.0-SNAPSHOT are not published yet: install them in the local Maven repository first.
+
+[source,sh]
+----
+(cd ../asciidoctorj && mvn install -DskipTests)
+(cd ../typst-pdf-wasm/java && mvn install)
+mvn verify
+----
+
+== Usage with the API
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.asciidoctor</groupId>
+  <artifactId>asciidoctorj-pdf</artifactId>
+  <version>4.0.0-SNAPSHOT</version>
+</dependency>
+----
+
+The `pdf` and `typst` backends are registered automatically (service provider `org.asciidoctor.jruby.converter.spi.ConverterRegistry`).
+
+Convert a file (the output is written next to it, `document.pdf`):
+
+[source]
+----
+try (Asciidoctor asciidoctor = Asciidoctor.Factory.create()) {
+    asciidoctor.convertFile(new File("document.adoc"), Options.builder()
+            .backend("pdf")
+            .safe(SafeMode.UNSAFE)
+            .attributes(Attributes.builder()
+                    .attribute("pdf-template", "theme/theme.typ")
+                    .attribute("pdf-fontsdir", "fonts")
+                    .build())
+            .build());
+}
+----
+
+Convert a string to the bytes of the PDF:
+
+[source]
+----
+byte[] pdf = asciidoctor.convert(source, Options.builder().backend("pdf").build(), byte[].class);
+----
+
+Write the Typst source instead of the PDF:
+
+[source]
+----
+String typst = asciidoctor.convert(source, Options.builder()
+        .backend("typst")
+        .standalone(true)
+        .attributes(Attributes.builder().attribute("pdf-template", "theme/theme.typ").build())
+        .build());
+----
+
+NOTE: The PDF is always a complete document, `standalone` doesn't change it.
+With the `typst` backend, a non-standalone conversion returns the body only (no imports, no `#show: asciidoctor.with(…)`).
+
+When the Typst compilation fails, the conversion throws an `IllegalStateException` with the Typst errors, each followed by the line of the generated source it refers to.
+The errors and warnings are also logged through the AsciidoctorJ log handlers, prefixed with `typst:`.
+
+== Usage with the CLI
+
+Put the converter and its dependencies on the class path of the AsciidoctorJ CLI:
+
+[source,sh]
+----
+mvn dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=lib
+cp target/asciidoctorj-pdf-4.0.0-SNAPSHOT.jar lib/
+
+java -cp "asciidoctorj-cli-4.0.0-SNAPSHOT.jar:lib/*" org.asciidoctor.cli.Invoker \
+  -b pdf -a pdf-template=theme/theme.typ document.adoc
+----
+
+The usual options apply, for instance:
+
+[source,sh]
+----
+asciidoctorj -b pdf -o out/guide.pdf -a toc -a sectnums -a pdf-fontsdir=fonts guide.adoc
+asciidoctorj -b typst -a pdf-template=theme/theme.typ guide.adoc   # writes guide.typ
+asciidoctorj -b pdf -o - guide.adoc > guide.pdf                    # writes to stdout
+----
+
+(`asciidoctorj` stands for the `java -cp … org.asciidoctor.cli.Invoker` command above.)
+
+WARNING: The `-I` option of the CLI can't load the converter yet: it only registers the extensions (`ExtensionRegistry`), not the converters.
+
+== Attributes
+
+[cols="1,1,3"]
+|===
+|Attribute |Backends |Description
+
+|`pdf-template`
+|pdf, typst
+|The Typst template.
+With `pdf`: a path relative to the document directory (or absolute), whose directory is available as `/template/`.
+With `typst`: the path written in the `#import`, relative to the output file.
+Default: the base template only.
+
+|`pdf-fontsdir`
+|pdf
+|Directories of additional fonts (TTF, OTF, TTC), separated by a comma or a semicolon, relative to the document directory.
+They are searched recursively.
+
+|`reproducible`
+|pdf
+|Don't set the creation date of the PDF (by default, the current time, also used by `datetime.today()`), so that the same input gives the same output.
+
+|`typst-base`
+|typst
+|The path of a copy of `asciidoctor.typ` to import.
+By default, the base template is written inline at the top of the output, so that the `.typ` file compiles on its own.
+
+|`pdf-page-size`
+|pdf, typst
+|The paper size of the base template, as a Typst paper name (`a4`, `us-letter`…).
+Default: `a4`.
+|===
+
+The standard attributes are taken into account: `doctype` (`book` gives a title page, a page break before each chapter and the parts), `toc`, `toc-title`, `toclevels`, `toc-placement` / `toc::[]`, `sectnums`, `sectnumlevels`, `notitle`, `lang`, `imagesdir`, `experimental` (`kbd:[]`, `btn:[]`, `menu:[]`), the captions (`figure-caption`, `table-caption`, `example-caption`, `appendix-caption`, `note-caption`…).
+
+[[templates]]
+== Templates
+
+=== How a template is applied
+
+The generated `main.typ` imports the base template, then your template, so the definitions of your template shadow those of the base template.
+It then applies the `asciidoctor` function to the whole document:
+
+[source,typst]
+----
+#import "/asciidoctor.typ": *
+#import "/template/theme.typ": *
+
+#show: asciidoctor.with(
+  title: [Document Title],
+  subtitle: [A Subtitle],
+  show-title: true,
+  authors: ((name: "Jane Doe", email: "jane@example.org"),),
+  revision: (number: "1.2", date: "2026-10-17", remark: "Draft"),
+  doctype: "article",
+  lang: "en",
+  toc: (title: [Table of Contents], levels: 2),
+  attributes: (
+    "company": "Yuzu Tech",
+    ...
+  ),
+)
+
+#heading(level: 1, numbering: (..) => "1.")[Introduction] #label("_introduction")
+
+...
+----
+
+`attributes` contains the document attributes whose value is a string (minus the internal ones), so a template can use custom attributes: `attributes.at("company", default: none)`.
+
+=== A minimal template
+
+A template only redefines what it needs; it can reuse the base template by importing it.
+
+.theme/theme.typ
+[source,typst]
+----
+#import "/asciidoctor.typ" as base: *
+#import "footer.typ": footer-text        // relative to the template directory
+
+// Redefine an element
+#let admonition(name, caption: none, title: none, body) = block(
+  fill: luma(240), inset: 1em, radius: 4pt, width: 100%,
+)[*#upper(name)*: #body]
+
+// Wrap the document setup of the base template
+#let asciidoctor(attributes: (:), ..args, body) = {
+  set page(footer: align(center)[#footer-text #attributes.at("company", default: "")])
+  show heading: set text(fill: rgb("#2156a5"))
+  base.asciidoctor(attributes: attributes, ..args, body)
+}
+----
+
+A template can also replace `asciidoctor` entirely, like the invoice template of typst-pdf-wasm.
+It must accept the named arguments above (or `..args`) and the body.
+
+=== Functions of the base template
+
+[cols="2,3"]
+|===
+|Function |Used for
+
+|`asciidoctor(title:, subtitle:, show-title:, authors:, revision:, doctype:, lang:, toc:, attributes:, body)` |The document: page, text and element styles, title, table of contents
+|`title-page(title:, subtitle:, authors:, revision:, doctype:)` |The title page (book) or the title (article)
+|`toc-block(title:, levels:)` |The table of contents
+|`part(title)` |A part of a book (level 0 section)
+|`block-title(body)` |The title of a block (`.Title`)
+|`role-block(roles, body)` |A paragraph with roles (e.g., `[.lead]`)
+|`admonition(name, caption:, title:, body)` |`NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION` (`caption` is the localized label)
+|`example(title:, body)` |Example block
+|`sidebar(title:, body)` |Sidebar block
+|`verse(attribution:, body)` |Verse block
+|`verbatim(context-name, body)` |Listing or literal block with inline formatting (e.g., `subs=+quotes`); the others are `raw`
+|`image-block(image, alt:, caption:, align:, link:)` |Block image (`image` is `none` when the file is not found)
+|`table-block(caption:, width:, align:, table)` |The figure that encloses a table
+|`table-stroke(frame, grid)` |The `stroke` of a table, from the `frame` and `grid` attributes
+|`table-fill(stripes)` |The `fill` of a table, from the `stripes` attribute
+|`colist(items)` |Callout list
+|`qanda(items)` |Question and answer list (an array of pairs)
+|`hdlist(items)` |Horizontal description list (an array of pairs)
+|`abstract(title:, body)` |Abstract
+|`thematic-break()` |Thematic break (`'''`)
+|`mono(body)` |Monospaced text
+|`phrase(roles, body)` |Text with roles (`[.red]#text#`); the base template handles `underline`, `line-through`, `big`, `small` and the color names
+|`kbd(keys)`, `btn(body)`, `menu(items)` |Keyboard, button and menu macros
+|`callout(number)` |Callout number in a callout list
+|`checkbox(checked)` |Marker of a checklist item (`none` for an item without a checkbox)
+|`icon(name)` |Icon macro
+|`stem(notation, source, block:)` |STEM block or inline macro
+|===
+
+The base template also defines the dictionaries `colors` and `fonts`.
+
+NOTE: The functions of the base template call each other through the base module: redefining `block-title` in a template changes the titles written by the converter, not the ones written by the base `example` function.
+
+=== Passthrough
+
+A passthrough block (`++++`) is written as is: it can contain Typst code.
+
+[source,asciidoc]
+----
+++++
+#align(center, rect(fill: yellow)[Raw Typst])
+++++
+----
+
+== Limitations
+
+* An inline passthrough (`+pass:[...]+`, `+++...+++`) is escaped like text: it can't contain Typst code.
+* Remote images (URLs) are not supported; the image is replaced by its alt text.
+* STEM (`latexmath`, `asciimath`) is displayed as source code: Typst has no TeX or AsciiMath parser.
+* Callouts in a listing are displayed as circled numbers (①); listings have no line numbers.
+* Audio and video are replaced by links.
+* Typst packages (`@preview/…`) can't be imported: put the files in the template directory.
+* Inter-document cross references are displayed as text.

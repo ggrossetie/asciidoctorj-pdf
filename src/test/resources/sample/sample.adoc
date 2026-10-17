@@ -1,0 +1,146 @@
+= Document Title: A Subtitle
+Jane Doe <jane@example.org>; John Smith
+v1.2, 2026-10-17: Draft
+:doctype: article
+:toc:
+:sectnums:
+:imagesdir: images
+:company: Yuzu Tech
+:experimental:
+
+[abstract]
+This document exercises the *AsciiDoc* elements supported by the _Typst_ converter.
+
+== Inline formatting
+
+Text with *strong*, _emphasis_, `monospace`, ^super^script, ~sub~script, #highlight# and [.red]#red text#.
+Special characters: 5 * 3 = 15, a_b, $100, #hashtag, [brackets], <angle>, @mention, ~tilde, 'quotes' "double",
+`<code>` & ampersand, a // comment, a /* block */, an -- dash, an ellipsis... and http://example.org/path.
+"`Curly double`" and '`curly single`'.
+
+Line one +
+line two (hard break).
+
+A link to https://asciidoctor.org[Asciidoctor], an xref to <<tables>>, an xref to <<_lists,the lists>>,
+a footnote.footnote:note[A footnote.] Another reference to the same footnote.footnote:note[]
+Keys kbd:[Ctrl+Shift+T], button btn:[Save], menu menu:File[Save As...]. [[inline-anchor]]Inline anchor.
+
+== Blocks
+
+.A titled paragraph
+Paragraph with a title.
+
+NOTE: A note admonition.
+
+[WARNING]
+.Be careful
+====
+A warning with a title and two paragraphs.
+
+Second paragraph.
+====
+
+.An example
+====
+Example content.
+====
+
+.A sidebar
+****
+Sidebar content.
+****
+
+[quote, Albert Einstein, Ideas and Opinions]
+____
+Imagination is more important than knowledge.
+____
+
+[verse, Carl Sandburg, Fog]
+____
+The fog comes
+on little cat feet.
+____
+
+.A source listing
+[source,java]
+----
+public class Hello { // <1>
+  public static void main(String[] args) {
+    System.out.println("Hello <World> & \"friends\""); // <2>
+  }
+}
+----
+<1> The class.
+<2> The output.
+
+....
+A literal block
+  with indentation
+....
+
+[subs=+quotes]
+----
+A listing with *bold* text
+  and indentation
+----
+
+'''
+
+image::logo.svg[Logo,240,title="The logo"]
+
+An inline image:logo.svg[Logo,height=12] in a sentence.
+
+[[_lists]]
+== Lists
+
+* Item one
+* Item two
+** Nested item
++
+Attached paragraph.
+* [x] Checked
+* [ ] Unchecked
+
+[loweralpha,start=3]
+. Third
+. Fourth
+
+CPU:: The brain.
+RAM:: The memory.
+
+[qanda]
+What is AsciiDoc?:: A markup language.
+
+[horizontal]
+Term:: Description.
+
+[[tables]]
+== Tables
+
+.A table
+[cols="1,2,^1",options="header,footer"]
+|===
+|Name |Description |Count
+
+|Apple
+|A *red* fruit
+|3
+
+2+|Spanning two columns
+|5
+
+|Total |  |8
+|===
+
+[cols="a,1"]
+|===
+|
+* An AsciiDoc cell
+* with a list
+|Plain
+|===
+
+[appendix]
+== An appendix
+
+Appendix content.
