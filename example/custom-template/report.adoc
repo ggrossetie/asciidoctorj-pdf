@@ -7,11 +7,11 @@ v1.0, 2026-10-17
 :sectnums:
 :imagesdir: images
 :pdf-template: theme/theme.typ
-:company: Yuzu Tech
+:company: Yuzu tech
 :classification: Internal
 
 [abstract]
-This report is converted with a custom Typst template, `theme/theme.typ`: the cover page, the header and footer, the colors, the admonitions, the tables and the `badge` role come from the template.
+This report is converted with a custom Typst template, `theme/theme.typ`: the cover page, the header and footer, the colors, the font (M PLUS Rounded 1c, whose files are in `theme/fonts`), the admonitions, the tables and the `badge` role come from the template.
 The `company` and `classification` attributes of this document are read by the template.
 
 == Summary

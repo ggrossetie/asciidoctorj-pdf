@@ -2,6 +2,10 @@
 //
 // It imports the base template, redefines some of its functions and replaces the document setup (asciidoctor).
 // The functions it doesn't redefine (verse, colist, kbd…) come from the base template.
+//
+// Fonts: the font files of the template directory (fonts/*.ttf) are loaded with the template. The font is selected
+// by the family name stored in the file, which can differ from its commercial name: M PLUS Rounded 1c is named
+// "Rounded Mplus 1c" (fc-query -f '%{family}\n' fonts/MPLUSRounded1c-Regular.ttf prints it).
 
 #import "/asciidoctor.typ" as base: *
 
@@ -74,14 +78,38 @@
 
 // Document
 
+/// The logo, in color or in shades of gray: Typst has no image filter, so the colors of the SVG source (#RRGGBB) are
+/// replaced with their luminance.
+#let logo(grayscale: false, ..args) = {
+  let svg = read("logo.svg")
+  if grayscale {
+    svg = svg.replace(regex("#[0-9A-Fa-f]{6}"), match => luma(rgb(match.text)).to-hex())
+  }
+  image(bytes(svg), format: "svg", ..args)
+}
+
+/// The company name with the logo: the end of the name enters the empty bottom left quarter of the logo. The size of
+/// the logo follows the size of the text, multiplied by logo-scale.
+#let lockup(name, size: 1em, weight: "bold", grayscale: false, logo-scale: 1) = context {
+  let label = text(size: size, weight: weight, name)
+  let last-word = text(size: size, weight: weight, name.split(" ").last())
+  // the empty quarter is about 47% of the width of the logo (a square): about two thirds of the last word enter it
+  let logo-size = measure(last-word).width / 0.65 * logo-scale
+  let label-height = measure(label).height
+  // the slices start at 47% of the width of the logo: leave a gap that follows the size of the text
+  let logo-left = measure(label).width - logo-size * 0.47 + label-height * 0.4
+  box(width: logo-left + logo-size, height: logo-size, {
+    place(top + left, dx: logo-left, logo(grayscale: grayscale, width: logo-size))
+    // vertically centered in the bottom half of the logo
+    place(top + left, dy: logo-size * 0.74 - label-height / 2, label)
+  })
+}
+
 #let cover(title: none, subtitle: none, authors: (), revision: none, company: none, classification: none) = page(
   fill: primary, margin: (x: 2.5cm, y: 3cm), header: none, footer: none,
   {
     set text(fill: white)
-    grid(columns: (auto, 1fr), column-gutter: 0.8em, align: horizon,
-      image("logo.svg", width: 1.6cm),
-      text(size: 1.3em, weight: "bold", company),
-    )
+    if company != none { lockup(company, size: 1.8em) }
     v(1fr)
     line(length: 3cm, stroke: 4pt + accent)
     v(0.5em)
@@ -117,18 +145,18 @@
   let classification = attributes.at("classification", default: none)
 
   set document(title: title, author: authors.map(author => author.name))
-  set text(font: "New Computer Modern", size: 10.5pt, lang: lang)
+  set text(font: "Rounded Mplus 1c", size: 10pt, lang: lang)
   set par(justify: true, leading: 0.7em, spacing: 1.2em)
   set page(
     paper: "a4",
     margin: (x: 2.3cm, top: 3cm, bottom: 2.6cm),
     header: context {
       set text(size: 0.85em, fill: muted)
-      grid(columns: (auto, 1fr), column-gutter: 0.6em, align: horizon,
-        image("logo.svg", height: 0.9em),
-        [#company #h(1fr) #title],
+      grid(columns: (auto, 1fr), align: (left + bottom, right + bottom),
+        if company != none { lockup(company, weight: "regular", grayscale: true, logo-scale: 0.8) },
+        block(below: 0.6em, title),
       )
-      v(-0.4em)
+      v(-0.2em)
       line(length: 100%, stroke: 0.5pt + muted.lighten(50%))
     },
     footer: context {

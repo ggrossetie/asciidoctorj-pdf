@@ -5,7 +5,7 @@ v1.2, 2026-10-17: Draft
 :toc:
 :sectnums:
 :imagesdir: images
-:company: Yuzu Tech
+:company: Yuzu tech
 :experimental:
 
 [abstract]

@@ -264,7 +264,7 @@ It then applies the `asciidoctor` function to the whole document:
   lang: "en",
   toc: (title: [Table of Contents], levels: 2),
   attributes: (
-    "company": "Yuzu Tech",
+    "company": "Yuzu tech",
     ...
   ),
 )
