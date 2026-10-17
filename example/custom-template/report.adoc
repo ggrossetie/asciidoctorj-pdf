@@ -1,0 +1,85 @@
+= Quarterly Report: Q3 2026
+Guillaume Grossetie <ggrossetie@yuzutech.fr>
+v1.0, 2026-10-17
+:doctype: article
+:toc:
+:toclevels: 1
+:sectnums:
+:imagesdir: images
+:pdf-template: theme/theme.typ
+:company: Yuzu Tech
+:classification: Internal
+
+[abstract]
+This report is converted with a custom Typst template, `theme/theme.typ`: the cover page, the header and footer, the colors, the admonitions, the tables and the `badge` role come from the template.
+The `company` and `classification` attributes of this document are read by the template.
+
+== Summary
+
+The quarter was marked by the first release of the [.badge]#new# PDF converter, which runs on the JVM without Ruby and without any native library.footnote:[Typst runs as WebAssembly, translated to JVM bytecode by Chicory.]
+
+TIP: Templates are plain Typst files: a template redefines the functions of the base template it wants to change, and keeps the others.
+
+=== Highlights
+
+* The converter supports most of the AsciiDoc elements.
+* A conversion takes about *150 ms* once the JVM is warm.
+* A template can read any document attribute.
+
+[quote, A happy user]
+____
+Finally, a PDF converter that I can style with a real language.
+____
+
+== Metrics
+
+.Key metrics of the quarter
+[cols="3,1,1,1",options="header"]
+|===
+|Metric |Q2 |Q3 |Trend
+
+|Documents converted |1,204 |3,890 |▲
+|Average conversion time (ms) |410 |152 |▼
+|Templates in use |2 |9 |▲
+|Open issues |37 |21 |▼
+|===
+
+WARNING: The figures of Q2 were measured with an earlier version of the converter.
+
+.Where the time goes
+====
+Most of the conversion time is spent in Typst on the first conversion: the JVM loads and compiles the classes translated from WebAssembly.
+The next conversions reuse the compiler and its incremental cache.
+====
+
+== Architecture
+
+.The conversion pipeline
+image::diagram.svg[Pipeline,pdfwidth=100%]
+
+The template receives the document metadata and the document attributes:
+
+[source,typst]
+----
+#let asciidoctor(title: none, authors: (), attributes: (:), ..args, body) = {
+  let company = attributes.at("company", default: none)
+  set page(header: [#company #h(1fr) #title])
+  body
+}
+----
+
+.Technical debt
+****
+The STEM notations (latexmath, asciimath) are displayed as source code: Typst has no TeX parser.
+Remote images are not supported yet.
+****
+
+== Next steps
+
+. Publish AsciidoctorJ 4 and the Typst module to Maven Central.
+. Provide a gallery of templates.
+. Support remote images.
+
+IMPORTANT: The next report is due on 2027-01-15.
+
+CAUTION: This document is internal: don't share it outside of the company.
