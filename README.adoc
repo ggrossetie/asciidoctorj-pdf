@@ -245,6 +245,20 @@ Default: `a4`.
 `prepress` does the same, mirrors the margins (`margin-inner` on the binding side, `margin-outer` on the other side) and, for a book, starts the title page, the table of contents, the body, the parts and the chapters on a recto page.
 A part or a chapter with the `nonfacing` option (`[%nonfacing]`) starts on the next page.
 
+|`front-cover-image`
+|pdf, typst
+|The image of the front cover, like in https://docs.asciidoctor.org/pdf-converter/latest/cover-page/[Asciidoctor PDF]: a path or an image macro, relative to `imagesdir` (`:front-cover-image: image:cover.png[fit=cover]`).
+The cover is a page without margins nor page number, before the title page; it's not counted in the page numbers.
+`fit` scales the image: `contain` (default, the image fits in the page), `cover` (the image covers the page), `fill` (the image is stretched to the page), `none` (natural size) or `scale-down` (`contain` if the image is larger than the page, `none` otherwise).
+`position` aligns the image in the page (`center` by default, `top`, `bottom left`…).
+`page` selects the page of a PDF file (`image:cover.pdf[page=2]`).
+In prepress, the cover is followed by a blank page.
+
+|`back-cover-image`
+|pdf, typst
+|The image of the back cover, like `front-cover-image`: a page after the last page of the document.
+In prepress, the back cover is on a verso page (preceded by a blank page if needed).
+
 |`show-link-uri`
 |pdf, typst
 |Shows the URI after the text of the links (`Asciidoctor [https://asciidoctor.org]`), whatever the media.
@@ -353,8 +367,9 @@ The custom template example uses M PLUS Rounded 1c this way: see link:example/cu
 |===
 |Function |Used for
 
-|`asciidoctor(title:, subtitle:, show-title:, authors:, revision:, doctype:, lang:, toc:, fonts:, margin:, margin-inner:, margin-outer:, attributes:, body)` |The document: page, text and element styles, title, table of contents. `fonts` replaces some of the default fonts (`body`, `heading`, `mono`). `margin` is the margin of the pages; `margin-inner` and `margin-outer` replace its side margins when `media` is `prepress` (`none` keeps them).
+|`asciidoctor(title:, subtitle:, show-title:, authors:, revision:, doctype:, lang:, toc:, front-cover:, back-cover:, fonts:, margin:, margin-inner:, margin-outer:, attributes:, body)` |The document: page, text and element styles, title, table of contents. `front-cover` and `back-cover` are the front cover (`front-cover-image`) and the back cover (`back-cover-image`), displayed on their own page before the title page and after the body. `fonts` replaces some of the default fonts (`body`, `heading`, `mono`). `margin` is the margin of the pages; `margin-inner` and `margin-outer` replace its side margins when `media` is `prepress` (`none` keeps them).
 |`title-page(title:, subtitle:, authors:, revision:, doctype:)` |The title page (book) or the title (article)
+|`cover-image(image, fit:, position:)` |The image of a cover (`front-cover-image`, `back-cover-image`), scaled according to `fit` and aligned in the page according to `position`
 |`toc-block(title:, levels:)` |The table of contents
 |`part(title)` |A part of a book (level 0 section)
 |`block-title(body)` |The title of a block (`.Title`)

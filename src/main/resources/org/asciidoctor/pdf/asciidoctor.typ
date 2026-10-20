@@ -237,6 +237,35 @@
   outline(title: title, depth: levels)
 }
 
+/// A cover image, that fills the page according to fit, like in Asciidoctor PDF: contain (the default: scaled to fit
+/// in the page), cover (scaled to cover the page), fill (stretched to the page), none (natural size) or scale-down
+/// (contain if the image is larger than the page, none otherwise). The position is the alignment of the image in the
+/// page.
+#let cover-image(image, fit: "contain", position: center + horizon) = layout(page => {
+  let natural = measure(image)
+  let (width, height) = if fit == "fill" or natural.width == 0pt or natural.height == 0pt {
+    (page.width, page.height)
+  } else {
+    let contain = calc.min(page.width / natural.width, page.height / natural.height)
+    let scale = if fit == "cover" { calc.max(page.width / natural.width, page.height / natural.height) }
+      else if fit == "none" { 1 }
+      else if fit == "scale-down" { calc.min(1, contain) }
+      else { contain }
+    (natural.width * scale, natural.height * scale)
+  }
+  set std.image(width: width, height: height, fit: "stretch")
+  // NOTE in a block of the size of the page, otherwise the image is placed relative to an empty block
+  block(width: page.width, height: page.height, place(position, image))
+})
+
+/// A cover page (front-cover-image, back-cover-image): the cover fills the page, without margins, header, footer or
+/// page number. The page is not counted, so that the total number of pages doesn't include the back cover.
+#let cover-page(cover) = page(margin: 0pt, header: none, footer: none, numbering: none, background: none,
+  foreground: none, {
+    counter(page).update(n => n - 1)
+    cover
+  })
+
 /// The title page of a book, or the title of an article.
 #let title-page(title: none, subtitle: none, authors: (), revision: none, doctype: "article") = {
   let details = {
@@ -275,6 +304,10 @@
 /// - margin: the margins of the pages, a length or a dictionary like the margin of page.
 /// - margin-inner, margin-outer: when media is prepress, the side margins of the pages, on the side of the binding
 ///   (left on a recto page, right on a verso page) and on the other side; none keeps the side margin of margin.
+/// - front-cover: the front cover (front-cover-image), displayed by cover-page before the title page; it is not
+///   counted in the page numbers. When media is prepress, it is followed by a blank page.
+/// - back-cover: the back cover (back-cover-image), displayed by cover-page after the body. When media is prepress,
+///   it is preceded by a blank page if needed, so that it is on a verso page.
 /// - attributes: the document attributes (a dictionary of strings), for instance to read custom attributes.
 ///
 /// The media attribute adapts the document to its medium: screen (the default), print (links in the text color) or
@@ -289,6 +322,8 @@
   doctype: "article",
   lang: "en",
   toc: none,
+  front-cover: none,
+  back-cover: none,
   fonts: (:),
   margin: (x: 2cm, top: 2cm, bottom: 2.5cm),
   margin-inner: 2.25cm,
@@ -351,6 +386,12 @@
   show figure.caption: set text(style: "italic", size: 0.95em)
   show footnote.entry: set text(size: 0.85em)
 
+  if front-cover != none {
+    cover-page(front-cover)
+    // NOTE the back of the cover, so that the title page is on a recto page
+    if media == "prepress" { page(header: none, footer: none, numbering: none, background: none, foreground: none, []) }
+    counter(page).update(1)
+  }
   if show-title and title != none {
     title-page(title: title, subtitle: subtitle, authors: authors, revision: revision, doctype: doctype)
   }
@@ -362,4 +403,9 @@
   // NOTE the converter calls nonfacing() before the document when its first block is [%nonfacing]
   if facing { facing-pagebreak() }
   body
+  if back-cover != none {
+    // NOTE a verso page, so that the back cover is on the back of the book
+    if media == "prepress" { pagebreak(weak: true, to: "even") }
+    cover-page(back-cover)
+  }
 }

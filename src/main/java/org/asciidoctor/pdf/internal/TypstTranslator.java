@@ -42,6 +42,9 @@ public final class TypstTranslator {
 
     private static final Pattern CALLOUT = Pattern.compile("#callout\\((\\d+)\\)");
     private static final Pattern LENGTH = Pattern.compile("(\\d+(?:\\.\\d+)?)(%|px|pt|in|cm|mm|vw|em)?");
+    /** An image macro in the value of an attribute: image:target[attributes]. */
+    private static final Pattern IMAGE_MACRO = Pattern.compile("image::?(.*?)\\[(.*)]");
+    private static final Pattern NAMED_ATTRIBUTE = Pattern.compile("([\\w-]+)=(\"[^\"]*\"|'[^']*'|[^,]*)");
     /** Attributes that are not useful to a template. */
     private static final Pattern INTERNAL_ATTRIBUTE = Pattern.compile(
             "(asciidoctor|backend|basebackend|doctype|filetype|safe-mode|outfilesuffix|embedded|htmlsyntax|"
@@ -156,6 +159,14 @@ public final class TypstTranslator {
                 && !"preamble".equals(toc)) {
             arg(out, "toc", tocArgs(doc));
         }
+        String frontCover = coverImage(doc, "front-cover-image");
+        if (frontCover != null) {
+            arg(out, "front-cover", frontCover);
+        }
+        String backCover = coverImage(doc, "back-cover-image");
+        if (backCover != null) {
+            arg(out, "back-cover", backCover);
+        }
         arg(out, "attributes", attributes(doc));
         out.append(")\n\n");
         out.append(blocks(doc));
@@ -180,6 +191,64 @@ public final class TypstTranslator {
         return attributes.entrySet().stream()
                 .map(e -> "    " + string(e.getKey()) + ": " + string(e.getValue()) + ",\n")
                 .collect(Collectors.joining("", "(\n", "  )"));
+    }
+
+    /**
+     * The cover image given by an attribute, like in Asciidoctor PDF: a path, or an image macro whose attributes are
+     * fit (contain, cover, fill, none or scale-down), position (e.g., top left) and page (of a PDF file); the path is
+     * relative to imagesdir.
+     *
+     * @return the call to the cover-image function of the base template, or {@code null} if there is no cover image
+     */
+    private String coverImage(Document doc, String name) {
+        Object value = doc.getAttribute(name);
+        if (value == null || String.valueOf(value).isBlank() || "none".equals(value)) {
+            return null;
+        }
+        String target = String.valueOf(value).strip();
+        Map<String, String> attributes = new TreeMap<>();
+        Matcher macro = IMAGE_MACRO.matcher(target);
+        if (macro.matches()) {
+            target = macro.group(1);
+            Matcher attribute = NAMED_ATTRIBUTE.matcher(macro.group(2));
+            while (attribute.find()) {
+                attributes.put(attribute.group(1), attribute.group(2).replaceAll("^([\"'])(.*)\\1$", "$2").strip());
+            }
+        }
+        String path = imageResolver.resolve(doc, target);
+        if (path == null) {
+            return null;
+        }
+        StringBuilder out = new StringBuilder("cover-image(image(").append(string(path));
+        String page = attributes.get("page");
+        if (page != null && page.matches("\\d+") && target.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
+            out.append(", page: ").append(page);
+        }
+        out.append(')');
+        String fit = attributes.get("fit");
+        if (fit != null) {
+            out.append(", fit: ").append(string(fit));
+        }
+        String position = attributes.get("position");
+        if (position != null) {
+            out.append(", position: ").append(alignment(position));
+        }
+        return out.append(')').toString();
+    }
+
+    /** Converts a position (e.g., top left, center, bottom) to a Typst alignment. */
+    private static String alignment(String position) {
+        String horizontal = "center";
+        String vertical = "horizon";
+        for (String word : position.toLowerCase(Locale.ROOT).split("[\\s,]+")) {
+            switch (word) {
+                case "left", "right" -> horizontal = word;
+                case "top", "bottom" -> vertical = word;
+                default -> {
+                }
+            }
+        }
+        return horizontal + " + " + vertical;
     }
 
     private String toc(Document doc, ContentNode node) {
