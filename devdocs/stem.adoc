@@ -1,0 +1,44 @@
+= STEM expressions
+:toc:
+
+Status: ideas only, nothing implemented yet.
+
+== Current state
+
+`TypstTranslator` turns `stem` blocks and the `stem:[]`, `latexmath:[]` and `asciimath:[]` macros into calls to `stem(notation, source, block:)`.
+The base template (`asciidoctor.typ`) shows the source as is with `raw`, because Typst cannot parse TeX or AsciiMath.
+
+Typst has a native math mode (`$x^2$` inline, `$ x^2 $` as a block) with good rendering, but it uses its own syntax.
+
+== Ideas
+
+=== `latexmath`: the MiTeX package
+
+https://typst.app/universe/package/mitex[MiTeX] (`@preview/mitex`) converts LaTeX to Typst math at compile time:
+`#mitex(`\frac{a}{b}`)` for a block, `#mi(...)` inline.
+It covers most of amsmath (fractions, matrices, `aligned`, `cases`, most symbols…).
+
+Points to check:
+
+* MiTeX relies on a WebAssembly plugin (written in Rust), which Typst runs with its own interpreter (wasmi).
+  Here it would be Wasm interpreted inside Typst, which itself runs as Wasm on Chicory: it should work, but performance must be measured first.
+* The package must ship in the jar and be served from the virtual file system: we cannot download it from Typst Universe at compile time.
+
+=== `asciimath`: translate in Java
+
+There is no mature Typst package for AsciiMath, as far as we know.
+AsciiMath syntax is very close to Typst math (`x^2`, `a/b`, `sqrt(x)`, `sum_(i=1)^n`, `alpha`, `->`, `oo`…), so a small AsciiMath → Typst math translator in Java, called from `TypstTranslator`, looks realistic.
+
+Alternative: AsciiMath → LaTeX, then MiTeX.
+That adds one more step and depends on MiTeX.
+
+=== Native Typst math
+
+Also accept Typst syntax as is (for example `:stem: typst` or a passthrough block).
+Nothing to convert, and useful for people who write for this backend directly.
+
+== Recommendation
+
+* MiTeX for `latexmath`, after a performance check under Chicory.
+* A Java translator for `asciimath`.
+* Keep the `stem(notation, source, block:)` function in the base template so that a template can still redefine it.
