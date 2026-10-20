@@ -89,3 +89,72 @@ jobs:
         with:
           name: test-reports-java-${{ matrix.java }}
           path: target/surefire-reports/
+
+  native:
+    name: native-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # AsciidoctorJ 4 and typst-pdf are not published yet: build them from source.
+      - name: Checkout AsciidoctorJ
+        uses: actions/checkout@v7
+        with:
+          repository: ggrossetie/asciidoctorj
+          ref: asciidoctorj-4
+          path: deps/asciidoctorj
+      - name: Checkout typst-pdf-wasm
+        uses: actions/checkout@v7
+        with:
+          repository: ggrossetie/typst-pdf-wasm
+          path: deps/typst-pdf-wasm
+      - name: Get the revision of typst-pdf-wasm
+        id: typst
+        run: echo "sha=$(git -C deps/typst-pdf-wasm rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: graalvm-community
+          java-version: '25'
+          cache: maven
+
+      # Building the Wasm module compiles Typst: reuse it while typst-pdf-wasm doesn't change.
+      - name: Cache the Wasm module
+        id: wasm-cache
+        uses: actions/cache@v6
+        with:
+          path: deps/typst-pdf-wasm/dist/typst-pdf.wasm
+          key: typst-pdf-wasm-${{ steps.typst.outputs.sha }}
+      - name: Set up Rust
+        if: steps.wasm-cache.outputs.cache-hit != 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Cache the Rust build
+        if: steps.wasm-cache.outputs.cache-hit != 'true'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: deps/typst-pdf-wasm
+      - name: Build the Wasm module
+        if: steps.wasm-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes binaryen
+          deps/typst-pdf-wasm/scripts/build-wasm.sh
+
+      - name: Install AsciidoctorJ
+        run: ./gradlew --no-daemon :asciidoctorj-api:publishToMavenLocal :asciidoctorj-core:publishToMavenLocal
+        working-directory: deps/asciidoctorj
+      - name: Install typst-pdf
+        run: mvn install -DskipTests -DskipWasmBuild=true
+        working-directory: deps/typst-pdf-wasm/java
+
+      # Builds the tests as a native image and runs them: checks the reachability metadata
+      - name: Test in a native image
+        run: mvn -Pnative test
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-native
+          path: target/native-test-reports/
