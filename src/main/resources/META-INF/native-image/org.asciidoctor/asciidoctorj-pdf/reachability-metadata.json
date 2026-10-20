@@ -1,0 +1,27 @@
+{
+  "reflection": [
+    {
+      "type": "org.asciidoctor.pdf.PdfConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": ["java.lang.String", "java.util.Map"]
+        }
+      ]
+    },
+    {
+      "type": "org.asciidoctor.pdf.TypstConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": ["java.lang.String", "java.util.Map"]
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "glob": "org/asciidoctor/pdf/*.typ"
+    }
+  ]
+}
