@@ -7,11 +7,14 @@ v1.0, 2026-10-17
 :sectnums:
 :imagesdir: images
 :pdf-template: theme/theme.typ
+:front-cover-image: image:cover.svg[fit=cover]
+:back-cover-image: image:back-cover.svg[fit=cover]
 :company: Yuzu tech
 :classification: Internal
 
 [abstract]
-This report is converted with a custom Typst template, `theme/theme.typ`: the cover page, the header and footer, the colors, the font (M PLUS Rounded 1c, whose files are in `theme/fonts`), the admonitions, the tables and the `badge` role come from the template.
+This report is converted with a custom Typst template, `theme/theme.typ`: the title page, the header and footer, the colors, the font (M PLUS Rounded 1c, whose files are in `theme/fonts`), the admonitions, the tables and the `badge` role come from the template.
+The illustrations of the front and back covers are images, `images/cover.svg` and `images/back-cover.svg`, given by the `front-cover-image` and `back-cover-image` attributes.
 The `company` and `classification` attributes of this document are read by the template.
 
 == Summary

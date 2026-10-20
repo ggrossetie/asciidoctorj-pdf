@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" width="210mm" height="297mm">
+  <defs>
+    <linearGradient id="sky" x1="0.6" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#062c3d"/>
+      <stop offset="1" stop-color="#0b4f6c"/>
+    </linearGradient>
+    <pattern id="dots" width="7" height="7" patternUnits="userSpaceOnUse">
+      <circle cx="3.5" cy="3.5" r="0.45" fill="#ffffff" fill-opacity="0.18"/>
+    </pattern>
+  </defs>
+  <rect width="210" height="297" fill="url(#sky)"/>
+  <rect width="210" height="297" fill="url(#dots)"/>
+  <!-- the sun of the front cover, setting -->
+  <g fill="none" stroke="#f2b705">
+    <circle cx="105" cy="297" r="26" stroke-width="0" fill="#f2b705"/>
+    <circle cx="105" cy="297" r="40" stroke-width="0.8" stroke-opacity="0.8"/>
+    <circle cx="105" cy="297" r="56" stroke-width="0.6" stroke-opacity="0.5"/>
+    <circle cx="105" cy="297" r="74" stroke-width="0.4" stroke-opacity="0.3"/>
+    <circle cx="105" cy="297" r="94" stroke-width="0.3" stroke-opacity="0.15"/>
+  </g>
+  <!-- a band at the top -->
+  <rect width="210" height="16" fill="#062c3d" fill-opacity="0.85"/>
+  <rect x="156" y="7" width="30" height="2" fill="#f2b705"/>
+</svg>

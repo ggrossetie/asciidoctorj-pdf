@@ -137,6 +137,8 @@
   doctype: "article",
   lang: "en",
   toc: none,
+  front-cover: none,
+  back-cover: none,
   attributes: (:),
   body,
 ) = {
@@ -193,6 +195,8 @@
   show figure.caption: set text(size: 0.9em, fill: muted)
   show footnote.entry: set text(size: 0.85em)
 
+  // the cover image (front-cover-image), before the title page
+  if front-cover != none { base.cover-page(front-cover) }
   if show-title and title != none {
     cover(title: title, subtitle: subtitle, authors: authors, revision: revision, company: company,
       classification: classification)
@@ -204,4 +208,5 @@
     outline(title: text(fill: primary, toc.title), depth: toc.levels)
   }
   body
+  if back-cover != none { base.cover-page(back-cover) }
 }
