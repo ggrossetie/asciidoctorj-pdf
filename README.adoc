@@ -237,6 +237,22 @@ By default, the base template is written inline at the top of the output, so tha
 |pdf, typst
 |The paper size of the base template, as a Typst paper name (`a4`, `us-letter`…).
 Default: `a4`.
+
+|`media`
+|pdf, typst
+|The medium of the document, like in https://docs.asciidoctor.org/pdf-converter/latest/theme/print-and-prepress/[Asciidoctor PDF]: `screen` (default), `print` or `prepress`.
+`print` shows the URI after the text of the links (unless `show-link-uri` is unset) and the base template prints the links in the text color.
+`prepress` does the same, mirrors the margins (`margin-inner` on the binding side, `margin-outer` on the other side) and, for a book, starts the title page, the table of contents, the body, the parts and the chapters on a recto page.
+A part or a chapter with the `nonfacing` option (`[%nonfacing]`) starts on the next page.
+
+|`show-link-uri`
+|pdf, typst
+|Shows the URI after the text of the links (`Asciidoctor [https://asciidoctor.org]`), whatever the media.
+Unset it (`:!show-link-uri:`, `-a show-link-uri!`) to hide the URI in print.
+
+|`hide-uri-scheme`
+|pdf, typst
+|Removes the scheme (`https://`, `mailto:`) of the URI shown after a link.
 |===
 
 The standard attributes are taken into account: `doctype` (`book` gives a title page, a page break before each chapter and the parts), `toc`, `toc-title`, `toclevels`, `toc-placement` / `toc::[]`, `sectnums`, `sectnumlevels`, `notitle`, `lang`, `imagesdir`, `experimental` (`kbd:[]`, `btn:[]`, `menu:[]`), the captions (`figure-caption`, `table-caption`, `example-caption`, `appendix-caption`, `note-caption`…).
@@ -337,7 +353,7 @@ The custom template example uses M PLUS Rounded 1c this way: see link:example/cu
 |===
 |Function |Used for
 
-|`asciidoctor(title:, subtitle:, show-title:, authors:, revision:, doctype:, lang:, toc:, fonts:, attributes:, body)` |The document: page, text and element styles, title, table of contents. `fonts` replaces some of the default fonts (`body`, `heading`, `mono`).
+|`asciidoctor(title:, subtitle:, show-title:, authors:, revision:, doctype:, lang:, toc:, fonts:, margin:, margin-inner:, margin-outer:, attributes:, body)` |The document: page, text and element styles, title, table of contents. `fonts` replaces some of the default fonts (`body`, `heading`, `mono`). `margin` is the margin of the pages; `margin-inner` and `margin-outer` replace its side margins when `media` is `prepress` (`none` keeps them).
 |`title-page(title:, subtitle:, authors:, revision:, doctype:)` |The title page (book) or the title (article)
 |`toc-block(title:, levels:)` |The table of contents
 |`part(title)` |A part of a book (level 0 section)
@@ -364,6 +380,8 @@ The custom template example uses M PLUS Rounded 1c this way: see link:example/cu
 |`checkbox(checked)` |Marker of a checklist item (`none` for an item without a checkbox)
 |`icon(name)` |Icon macro
 |`stem(notation, source, block:)` |STEM block or inline macro
+|`link-uri(uri)` |The URI shown after the text of a link in print (`media`, `show-link-uri`)
+|`facing-pagebreak()` |The page break before a part, a chapter or the body of a book: to the next recto page in prepress (a template that replaces `asciidoctor` can use it in its show rule for the chapters)
 |===
 
 The base template also defines the dictionaries `colors` and `fonts` (the default fonts).

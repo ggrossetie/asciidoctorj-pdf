@@ -29,7 +29,38 @@
 #let document-fonts = state("asciidoctor-fonts", fonts)
 #let default-fonts = fonts
 
+/// Whether the parts and the chapters start on a recto (odd) page: true when media is prepress and the doctype is book.
+#let facing-pages = state("asciidoctor-facing-pages", false)
+/// Whether the next facing page break goes to a recto page: nonfacing() makes it go to the next page, once.
+#let next-facing = state("asciidoctor-next-facing", true)
+
+/// Makes the next part or chapter ([%nonfacing]) start on the next page rather than on the next recto page.
+#let nonfacing() = next-facing.update(false)
+
+/// The page break before a part, a chapter or the body of a book: to the next recto page when the pages are facing.
+#let facing-pagebreak() = {
+  context pagebreak(weak: true, to: if facing-pages.get() and next-facing.get() { "odd" })
+  next-facing.update(true)
+}
+
 // Inline elements
+
+/// The URI displayed after the text of a link in a printed document (media=print or prepress, or show-link-uri);
+/// without its scheme when hide-uri-scheme is set. The line can break after the /, ?, & and # characters.
+#let link-uri(uri) = {
+  let (scheme, address) = if uri.contains("://") {
+    let end = uri.position("://") + 3
+    (uri.slice(0, end), uri.slice(end))
+  } else {
+    ("", uri)
+  }
+  let chars = address.clusters()
+  // NOTE at least two characters after a break
+  let breakable = chars.enumerate().map(((i, char)) => {
+    if char in ("/", "?", "&", "#") and i < chars.len() - 2 { char + "\u{200b}" } else { char }
+  }).sum(default: "")
+  [ \[#text(size: 0.85em, hyphenate: false, scheme + breakable)\]]
+}
 
 /// Monospaced text (`text`).
 #let mono(body) = context text(font: document-fonts.get().mono, size: 0.88em, body)
@@ -194,7 +225,7 @@
 
 /// A part of a book (= Part).
 #let part(title) = {
-  pagebreak(weak: true)
+  facing-pagebreak()
   v(30%)
   align(center, text(size: 2.4em, weight: "bold", fill: colors.heading, title))
   pagebreak(weak: true)
@@ -241,7 +272,14 @@
 ///
 /// - fonts: the fonts that replace the default ones, e.g. (body: "Noto Serif", heading: "Noto Sans"); the fonts must
 ///   be embedded in Typst, in the template directory or in pdf-fontsdir.
+/// - margin: the margins of the pages, a length or a dictionary like the margin of page.
+/// - margin-inner, margin-outer: when media is prepress, the side margins of the pages, on the side of the binding
+///   (left on a recto page, right on a verso page) and on the other side; none keeps the side margin of margin.
 /// - attributes: the document attributes (a dictionary of strings), for instance to read custom attributes.
+///
+/// The media attribute adapts the document to its medium: screen (the default), print (links in the text color) or
+/// prepress (print, plus mirrored margins and, for a book, the title page, the table of contents, the body, the parts
+/// and the chapters start on a recto page).
 #let asciidoctor(
   title: none,
   subtitle: none,
@@ -252,18 +290,35 @@
   lang: "en",
   toc: none,
   fonts: (:),
+  margin: (x: 2cm, top: 2cm, bottom: 2.5cm),
+  margin-inner: 2.25cm,
+  margin-outer: 1.75cm,
   attributes: (:),
   body,
 ) = {
   let fonts = default-fonts + fonts
   document-fonts.update(fonts)
+  let media = attributes.at("media", default: "screen")
+  let facing = media == "prepress" and doctype == "book"
+  facing-pages.update(facing)
+  // mirrored margins: the left and right margins become the inside and outside margins
+  let margin = if media == "prepress" {
+    let margin = if type(margin) == dictionary { margin } else { (rest: margin) }
+    let side(name) = margin.at(name, default: margin.at("x", default: margin.at("rest", default: auto)))
+    let inside = if margin-inner != none { margin-inner } else { side("left") }
+    let outside = if margin-outer != none { margin-outer } else { side("right") }
+    let margin = margin.pairs().filter(((key, _)) => key not in ("left", "right", "x")).to-dict()
+    margin + (inside: inside, outside: outside)
+  } else {
+    margin
+  }
   set document(
     title: title,
     author: authors.map(author => author.name),
   )
   set page(
     paper: lower(attributes.at("pdf-page-size", default: "a4")),
-    margin: (x: 2cm, top: 2cm, bottom: 2.5cm),
+    margin: margin,
     numbering: "1",
   )
   set text(font: fonts.body, size: 10.5pt, fill: colors.text, lang: lang)
@@ -275,9 +330,9 @@
   show heading.where(level: 2): set text(size: 1.4em)
   show heading.where(level: 3): set text(size: 1.2em)
   show heading.where(level: 4): set text(size: 1.1em)
-  show heading.where(level: 1): it => if doctype == "book" { pagebreak(weak: true); it } else { it }
+  show heading.where(level: 1): it => if doctype == "book" { facing-pagebreak(); it } else { it }
 
-  show link: set text(fill: colors.link)
+  show link: set text(fill: if media == "screen" { colors.link } else { colors.text })
   show raw: set text(font: fonts.mono)
   show raw.where(block: true): set text(size: 0.85em)
   show raw.where(block: true): it => block(
@@ -300,8 +355,11 @@
     title-page(title: title, subtitle: subtitle, authors: authors, revision: revision, doctype: doctype)
   }
   if toc != none {
+    if facing { pagebreak(weak: true, to: "odd") }
     toc-block(title: toc.title, levels: toc.levels)
     if doctype == "book" { pagebreak(weak: true) }
   }
+  // NOTE the converter calls nonfacing() before the document when its first block is [%nonfacing]
+  if facing { facing-pagebreak() }
   body
 }

@@ -120,6 +120,15 @@ public final class TypstTranslator {
         if (templateImport != null) {
             out.append("#import ").append(string(templateImport)).append(": *\n");
         }
+        // NOTE the body of a book starts on a recto page in prepress mode, unless its first block is [%nonfacing]
+        List<StructuralNode> children = doc.getBlocks();
+        StructuralNode first = children.isEmpty() ? null : children.get(0);
+        if (first != null && "preamble".equals(first.getContext()) && !first.getBlocks().isEmpty()) {
+            first = first.getBlocks().get(0);
+        }
+        if (first != null && first.isOption("nonfacing")) {
+            out.append("\n#nonfacing()\n");
+        }
         out.append("\n#show: asciidoctor.with(\n");
         Title title = doc.getStructuredDoctitle();
         if (title != null) {
@@ -189,6 +198,10 @@ public final class TypstTranslator {
         StringBuilder out = new StringBuilder();
         int level = node.getLevel();
         String title = node.getTitle();
+        if (level <= 1 && node.isOption("nonfacing")) {
+            // a part or a chapter that starts on the next page rather than on the next recto page (prepress)
+            out.append("#nonfacing()\n");
+        }
         if (level == 0) {
             out.append("#part(").append(content(title)).append(')');
         } else {
@@ -656,7 +669,7 @@ public final class TypstTranslator {
         String type = node.getType() == null ? "" : node.getType();
         switch (type) {
             case "link" -> {
-                return code("#link(" + string(node.getTarget()) + ")[") + node.getText() + code("]");
+                return link(node);
             }
             case "xref" -> {
                 Object refid = node.getAttribute("refid");
@@ -689,6 +702,39 @@ public final class TypstTranslator {
                 return node.getText();
             }
         }
+    }
+
+    /**
+     * A link; in a printed document (the media attribute is print or prepress, or the show-link-uri attribute is set),
+     * followed by its URI, unless the text is the URI.
+     */
+    private String link(PhraseNode node) {
+        Document doc = node.getDocument();
+        String target = node.getTarget();
+        String text = node.getText();
+        String link = code("#link(" + string(target) + ")[") + text + code("]");
+        boolean print = !"screen".equals(media(doc));
+        boolean bare = node.getRoles().contains("bare");
+        String uri = target;
+        if (print && target.startsWith("mailto:")) {
+            String address = target.substring("mailto:".length());
+            bare |= address.equals(text);
+            if (doc.hasAttribute("hide-uri-scheme")) {
+                uri = address;
+            }
+        }
+        if (bare || !(doc.hasAttribute("show-link-uri") || print && doc.isAttributeUnspecified("show-link-uri"))) {
+            return link;
+        }
+        int scheme = uri.indexOf("://");
+        if (scheme >= 0 && doc.hasAttribute("hide-uri-scheme")) {
+            uri = uri.substring(scheme + 3);
+        }
+        return link + code("#link-uri(" + string(Markup.decodeEntities(uri)) + ")");
+    }
+
+    private static String media(Document doc) {
+        return String.valueOf(doc.getAttribute("media", "screen"));
     }
 
     private String inlineFootnote(PhraseNode node) {
