@@ -21,6 +21,7 @@ import org.asciidoctor.SafeMode;
 import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -66,6 +67,7 @@ class MediaTest {
                 .containsExactly("Asciidoctor [https://asciidoctor.org] is a text processor.");
     }
 
+    @Disabled("Unsetting show-link-uri has no effect until Document#isAttributeUnspecified is available: https://github.com/asciidoctor/asciidoctorj/issues/1337")
     @ParameterizedTest
     @ValueSource(strings = {"print", "prepress"})
     void doesNotShowTheUriOfALinkWhenShowLinkUriIsUnsetInTheDocument(String media) throws IOException {
@@ -77,6 +79,7 @@ class MediaTest {
                 .containsExactly("Asciidoctor is a text processor.");
     }
 
+    @Disabled("Unsetting show-link-uri has no effect until Document#isAttributeUnspecified is available: https://github.com/asciidoctor/asciidoctorj/issues/1337")
     @ParameterizedTest
     @ValueSource(strings = {"show-link-uri!", "!show-link-uri@"})
     void doesNotShowTheUriOfALinkWhenShowLinkUriIsUnsetFromTheApi(String unset) throws IOException {
@@ -85,6 +88,7 @@ class MediaTest {
                 .containsExactly("Asciidoctor is a text processor.");
     }
 
+    @Disabled("Unsetting show-link-uri has no effect until Document#isAttributeUnspecified is available: https://github.com/asciidoctor/asciidoctorj/issues/1337")
     @Test
     void doesNotShowTheUriOfALinkWhenShowLinkUriIsUnsetInAnAsciiDocTableCell() throws IOException {
         assertThat(lines("""

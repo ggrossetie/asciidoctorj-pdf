@@ -792,7 +792,7 @@ public final class TypstTranslator {
                 uri = address;
             }
         }
-        if (bare || !(doc.hasAttribute("show-link-uri") || print && doc.isAttributeUnspecified("show-link-uri"))) {
+        if (bare || !(doc.hasAttribute("show-link-uri") || print && isAttributeUnspecified(doc, "show-link-uri"))) {
             return link;
         }
         int scheme = uri.indexOf("://");
@@ -800,6 +800,17 @@ public final class TypstTranslator {
             uri = uri.substring(scheme + 3);
         }
         return link + code("#link-uri(" + string(Markup.decodeEntities(uri)) + ")");
+    }
+
+    /**
+     * Whether the attribute has never been set nor unset, by the document or the options.
+     * Workaround until Document#isAttributeUnspecified is available
+     * (https://github.com/asciidoctor/asciidoctorj/issues/1337): an absent attribute can't be told apart from an
+     * unset one (e.g., :!show-link-uri:), so it's arbitrarily considered as never set, like the default of
+     * Asciidoctor PDF; unsetting the attribute has no effect.
+     */
+    private static boolean isAttributeUnspecified(Document doc, String name) {
+        return !doc.hasAttribute(name);
     }
 
     private static String media(Document doc) {
