@@ -1,4 +1,4 @@
-= AsciidoctorJ PDF: A Showcase
+= AsciidoctorJ Typst: A Showcase
 Guillaume Grossetie <ggrossetie@yuzutech.fr>
 v0.1, 2026-10-17: Rendered with the default template
 :doctype: article
@@ -10,7 +10,7 @@ v0.1, 2026-10-17: Rendered with the default template
 :source-language: java
 
 [abstract]
-This document shows how the AsciiDoc elements look with the default template of AsciidoctorJ PDF.
+This document shows how the AsciiDoc elements look with the default template of AsciidoctorJ Typst.
 It was converted with `asciidoctorj -b pdf -a reproducible example.adoc`: AsciidoctorJ produced Typst, and Typst, running on the JVM as WebAssembly, produced this PDF.
 
 == Text

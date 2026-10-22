@@ -1,4 +1,4 @@
-// Base template of AsciidoctorJ PDF: the default rendering of the AsciiDoc elements.
+// Base template of AsciidoctorJ Typst: the default rendering of the AsciiDoc elements.
 //
 // The converted document imports this module, then the template given with the pdf-template attribute, if any. A
 // template can import this module (#import "/asciidoctor.typ": *) and redefine any of these functions, or style the

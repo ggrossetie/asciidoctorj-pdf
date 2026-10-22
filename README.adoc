@@ -1,4 +1,4 @@
-= AsciidoctorJ PDF
+= AsciidoctorJ Typst
 :toc: macro
 :toclevels: 2
 :source-language: java
@@ -9,7 +9,7 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
-AsciidoctorJ PDF converts AsciiDoc to PDF on the JVM, without Ruby and without any native library.
+AsciidoctorJ Typst converts AsciiDoc to PDF on the JVM, without Ruby and without any native library.
 The AsciiDoc document is converted to https://typst.app[Typst] by a converter for AsciidoctorJ 4 (the pure Java implementation of Asciidoctor), then compiled to PDF by Typst itself, compiled to WebAssembly and translated to JVM bytecode by https://chicory.dev[Chicory].
 
 The look of the PDF is defined by a Typst template given as a parameter.

@@ -1,4 +1,4 @@
-// A custom template for AsciidoctorJ PDF: a corporate report.
+// A custom template for AsciidoctorJ Typst: a corporate report.
 //
 // It imports the base template, redefines some of its functions and replaces the document setup (asciidoctor).
 // The functions it doesn't redefine (verse, colist, kbd…) come from the base template.
