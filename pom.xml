@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.asciidoctor</groupId>
-  <artifactId>asciidoctorj-pdf</artifactId>
-  <version>4.0.0-SNAPSHOT</version>
+  <groupId>fr.yuzutech.asciidoctor</groupId>
+  <artifactId>asciidoctorj-typst</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
   <name>AsciidoctorJ PDF</name>
   <description>Converts AsciiDoc to PDF on the JVM: AsciidoctorJ (pure Java) produces Typst, compiled to PDF by Typst running as WebAssembly on Chicory</description>
 

@@ -58,13 +58,13 @@ jobs:
       - name: Prepare the release assets
         run: |
           mkdir dist
-          cp target/asciidoctorj-pdf-$VERSION.jar \
-             target/asciidoctorj-pdf-$VERSION-all.jar \
-             target/asciidoctorj-pdf-$VERSION-sources.jar \
-             target/asciidoctorj-pdf-$VERSION-javadoc.jar \
+          cp target/asciidoctorj-typst-$VERSION.jar \
+             target/asciidoctorj-typst-$VERSION-all.jar \
+             target/asciidoctorj-typst-$VERSION-sources.jar \
+             target/asciidoctorj-typst-$VERSION-javadoc.jar \
              dist/
-          cp pom.xml dist/asciidoctorj-pdf-$VERSION.pom
-          cp example/example.pdf dist/asciidoctorj-pdf-$VERSION-example.pdf
+          cp pom.xml dist/asciidoctorj-typst-$VERSION.pom
+          cp example/example.pdf dist/asciidoctorj-typst-$VERSION-example.pdf
           cd dist
           for file in *; do
             md5sum "$file" | cut -d' ' -f1 > "$file.md5"
