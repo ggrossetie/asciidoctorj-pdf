@@ -112,20 +112,17 @@ Typst's default fonts (Libertinus Serif, New Computer Modern, DejaVu Sans Mono) 
 == Requirements
 
 * Java 17 or newer.
-* AsciidoctorJ 4.0.0-SNAPSHOT and typst-pdf 0.1.0-SNAPSHOT are not published yet: install them in the local Maven repository first, from the `asciidoctorj-4` branch of https://github.com/ggrossetie/asciidoctorj[ggrossetie/asciidoctorj] (built with Gradle, Java 17 to 25) and from https://github.com/ggrossetie/typst-pdf-wasm[ggrossetie/typst-pdf-wasm] (Rust with the `wasm32-unknown-unknown` target, and binaryen).
+* AsciidoctorJ 4.0.0-SNAPSHOT is not published yet: install it in the local Maven repository first, from the `asciidoctorj-4` branch of https://github.com/ggrossetie/asciidoctorj[ggrossetie/asciidoctorj] (built with Gradle, Java 17 to 25).
 
 [source,sh]
 ----
 git clone --branch asciidoctorj-4 https://github.com/ggrossetie/asciidoctorj.git
 (cd asciidoctorj && ./gradlew :asciidoctorj-api:publishToMavenLocal :asciidoctorj-core:publishToMavenLocal)
 
-git clone https://github.com/ggrossetie/typst-pdf-wasm.git
-(cd typst-pdf-wasm/java && mvn install)
-
 mvn verify
 ----
 
-The CI workflow (`.github/workflows/ci.yml`) does the same, and caches the WebAssembly module as long as typst-pdf-wasm doesn't change.
+The CI workflow (`.github/workflows/ci.yml`) does the same.
 
 == Usage with the API
 

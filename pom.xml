@@ -21,7 +21,7 @@
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <asciidoctorj.version>4.0.0-SNAPSHOT</asciidoctorj.version>
-    <typst-pdf.version>0.1.0-SNAPSHOT</typst-pdf.version>
+    <typst-pdf.version>0.1.1</typst-pdf.version>
     <junit.version>6.1.3</junit.version>
     <assertj.version>3.27.7</assertj.version>
     <pdfbox.version>3.0.5</pdfbox.version>
