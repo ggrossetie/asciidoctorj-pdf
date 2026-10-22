@@ -7,7 +7,7 @@
   <groupId>fr.yuzutech.asciidoctor</groupId>
   <artifactId>asciidoctorj-typst</artifactId>
   <version>0.1.0-SNAPSHOT</version>
-  <name>AsciidoctorJ PDF</name>
+  <name>AsciidoctorJ Typst</name>
   <description>Converts AsciiDoc to PDF on the JVM: AsciidoctorJ (pure Java) produces Typst, compiled to PDF by Typst running as WebAssembly on Chicory</description>
 
   <licenses>
