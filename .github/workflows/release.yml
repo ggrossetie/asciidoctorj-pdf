@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release (e.g. 4.0.0 or 4.0.0-alpha.1)
+        required: true
+      prerelease:
+        description: Mark the GitHub release as a pre-release
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# one release at a time
+concurrency:
+  group: ${{ github.workflow }}
+
+env:
+  MAVEN_ARGS: --batch-mode --no-transfer-progress
+  VERSION: ${{ inputs.version }}
+  TAG: v${{ inputs.version }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the version
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || [[ "$VERSION" == *SNAPSHOT ]]; then
+            echo "::error::'$VERSION' is not a release version (expected x.y.z or x.y.z-qualifier)"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+      - name: Check that the tag doesn't exist
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+            echo "::error::The tag $TAG already exists"
+            exit 1
+          fi
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - uses: ./.github/actions/install-dependencies
+
+      - name: Set the version
+        run: mvn org.codehaus.mojo:versions-maven-plugin:2.23.0:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
+      # also converts the example documents to PDF, published with the release
+      - name: Build and test
+        run: mvn -Prelease,examples verify
+
+      - name: Prepare the release assets
+        run: |
+          mkdir dist
+          cp target/asciidoctorj-pdf-$VERSION.jar \
+             target/asciidoctorj-pdf-$VERSION-all.jar \
+             target/asciidoctorj-pdf-$VERSION-sources.jar \
+             target/asciidoctorj-pdf-$VERSION-javadoc.jar \
+             dist/
+          cp pom.xml dist/asciidoctorj-pdf-$VERSION.pom
+          cp example/example.pdf dist/asciidoctorj-pdf-$VERSION-example.pdf
+          cd dist
+          for file in *; do
+            md5sum "$file" | cut -d' ' -f1 > "$file.md5"
+            sha256sum "$file" | cut -d' ' -f1 > "$file.sha256"
+          done
+          sha256sum $(ls | grep -v '\.md5$\|\.sha256$') > SHA256SUMS
+          ls -l
+
+      # The tag points to a commit with the release version, outside of main which stays on the SNAPSHOT version.
+      - name: Tag the release
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit --all --message "release $TAG"
+          git tag --annotate "$TAG" --message "AsciidoctorJ PDF $VERSION"
+          git push origin "refs/tags/$TAG"
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          gh release create "$TAG" dist/* \
+            --verify-tag \
+            --title "AsciidoctorJ PDF $VERSION" \
+            --generate-notes \
+            $([[ "$PRERELEASE" == 'true' ]] && echo --prerelease)

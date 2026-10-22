@@ -1,0 +1,56 @@
+name: Install the dependencies
+description: Builds AsciidoctorJ 4 and typst-pdf from source and installs them in the local Maven repository
+
+runs:
+  using: composite
+  steps:
+    # AsciidoctorJ 4 and typst-pdf are not published yet: build them from source.
+    - name: Checkout AsciidoctorJ
+      uses: actions/checkout@v7
+      with:
+        repository: ggrossetie/asciidoctorj
+        ref: asciidoctorj-4
+        path: deps/asciidoctorj
+    - name: Checkout typst-pdf-wasm
+      uses: actions/checkout@v7
+      with:
+        repository: ggrossetie/typst-pdf-wasm
+        path: deps/typst-pdf-wasm
+    - name: Get the revision of typst-pdf-wasm
+      id: typst
+      shell: bash
+      run: echo "sha=$(git -C deps/typst-pdf-wasm rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+    # Building the Wasm module compiles Typst: reuse it while typst-pdf-wasm doesn't change.
+    - name: Cache the Wasm module
+      id: wasm-cache
+      uses: actions/cache@v6
+      with:
+        path: deps/typst-pdf-wasm/dist/typst-pdf.wasm
+        key: typst-pdf-wasm-${{ steps.typst.outputs.sha }}
+    - name: Set up Rust
+      if: steps.wasm-cache.outputs.cache-hit != 'true'
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+    - name: Cache the Rust build
+      if: steps.wasm-cache.outputs.cache-hit != 'true'
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: deps/typst-pdf-wasm
+    - name: Build the Wasm module
+      if: steps.wasm-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes binaryen
+        deps/typst-pdf-wasm/scripts/build-wasm.sh
+
+    - name: Install AsciidoctorJ
+      shell: bash
+      run: ./gradlew --no-daemon :asciidoctorj-api:publishToMavenLocal :asciidoctorj-core:publishToMavenLocal
+      working-directory: deps/asciidoctorj
+    - name: Install typst-pdf
+      shell: bash
+      run: mvn install -DskipTests -DskipWasmBuild=true
+      working-directory: deps/typst-pdf-wasm/java
