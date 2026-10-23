@@ -112,12 +112,12 @@ Typst's default fonts (Libertinus Serif, New Computer Modern, DejaVu Sans Mono) 
 == Requirements
 
 * Java 17 or newer.
-* AsciidoctorJ 4.0.0-SNAPSHOT is not published yet: install it in the local Maven repository first, from the `asciidoctorj-4` branch of https://github.com/ggrossetie/asciidoctorj[ggrossetie/asciidoctorj] (built with Gradle, Java 17 to 25).
+* AsciidoctorJ 4.0.0-SNAPSHOT is not published yet: install it in the local Maven repository first, from the `asciidoctorj-4` branch of https://github.com/ggrossetie/asciidoctorj[ggrossetie/asciidoctorj] (built with Gradle, on Java 17 to 23, with a Java 21 toolchain).
 
 [source,sh]
 ----
 git clone --branch asciidoctorj-4 https://github.com/ggrossetie/asciidoctorj.git
-(cd asciidoctorj && ./gradlew :asciidoctorj-api:publishToMavenLocal :asciidoctorj-core:publishToMavenLocal)
+(cd asciidoctorj && ./gradlew :asciidoctorj-api:publishToMavenLocal :asciidoctorj-java:publishToMavenLocal)
 
 mvn verify
 ----

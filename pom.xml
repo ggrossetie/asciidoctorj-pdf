@@ -43,7 +43,7 @@
   <dependencies>
     <dependency>
       <groupId>org.asciidoctor</groupId>
-      <artifactId>asciidoctorj</artifactId>
+      <artifactId>asciidoctorj-java</artifactId>
       <version>${asciidoctorj.version}</version>
     </dependency>
     <dependency>

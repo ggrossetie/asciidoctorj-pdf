@@ -11,7 +11,10 @@ runs:
         repository: ggrossetie/asciidoctorj
         ref: asciidoctorj-4
         path: deps/asciidoctorj
+    # Gradle 8.12 does not run on Java 25: use the Java 21 preinstalled on the runner
     - name: Install AsciidoctorJ
       shell: bash
-      run: ./gradlew --no-daemon :asciidoctorj-api:publishToMavenLocal :asciidoctorj-core:publishToMavenLocal
+      run: ./gradlew --no-daemon :asciidoctorj-api:publishToMavenLocal :asciidoctorj-java:publishToMavenLocal
+      env:
+        JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
       working-directory: deps/asciidoctorj
